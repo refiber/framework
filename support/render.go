@@ -1,10 +1,9 @@
 package support
 
 import (
-	"refiber/utils"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/refiber/framework/utils"
 )
 
 func (s *support) Render() *render {

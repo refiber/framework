@@ -2,10 +2,10 @@ package inertia
 
 import (
 	"encoding/json"
-	"refiber/support"
-	"refiber/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/refiber/framework/support"
+	"github.com/refiber/framework/utils"
 )
 
 type InertiaInterface interface {

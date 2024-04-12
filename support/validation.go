@@ -2,12 +2,12 @@ package support
 
 import (
 	"encoding/json"
-	"refiber/constant"
 	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/refiber/framework/constant"
 )
 
 func (s *support) Validate(sct interface{}) error {

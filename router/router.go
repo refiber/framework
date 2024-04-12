@@ -1,9 +1,8 @@
 package router
 
 import (
-	"refiber/support"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/refiber/framework/support"
 )
 
 type RouterInterface interface {

@@ -2,10 +2,10 @@ package support
 
 import (
 	"encoding/json"
-	"refiber/constant"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/refiber/framework/constant"
 )
 
 func (s *support) NewAuthenticatedUserSession(user interface{}) error {

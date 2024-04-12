@@ -2,8 +2,6 @@ package refiber
 
 import (
 	"html/template"
-	"refiber/router"
-	"refiber/support"
 	"strings"
 	"time"
 
@@ -15,6 +13,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
+	"github.com/refiber/framework/router"
+	"github.com/refiber/framework/support"
 )
 
 // TODO: implement init?

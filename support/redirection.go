@@ -1,10 +1,9 @@
 package support
 
 import (
-	"refiber/constant"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/refiber/framework/constant"
 )
 
 func (s *support) Redirect() *redirect {
@@ -38,7 +37,7 @@ type redirectOptions struct {
 }
 
 func (ro *redirectOptions) WithMessage(messageType MessageType, message string) *redirectOptions {
-  m := fiber.Map{"type": string(messageType), "message": message}
+	m := fiber.Map{"type": string(messageType), "message": message}
 
 	if err := saveTempSession(ro.support, constant.KeyFlashMessage, &m); err != nil {
 		log.Errorw("refiber.support.redirection.WithMessage: failed to save session")
