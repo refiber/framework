@@ -13,6 +13,7 @@ type RouterInterface interface {
 	Put(path string, controller Controller, middlewares ...Hanlder) *route
 	Delete(path string, controller Controller, middlewares ...Hanlder) *route
 	Patch(path string, controller Controller, middlewares ...Hanlder) *route
+	CRUD(path string, handler CrudHandler, middlewares ...Hanlder)
 }
 
 func NewRouter(rootRoute fiber.Router, support support.Refiber) *route {
