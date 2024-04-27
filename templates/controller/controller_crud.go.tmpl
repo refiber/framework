@@ -1,0 +1,46 @@
+package {{.PackageName}}
+
+import (
+	support "github.com/refiber/framework/support"
+)
+
+func ({{.PackageName}} *{{.PackageName}}Controller) {{.MethodName}}() *{{.ModelName}} {
+	return &{{.ModelName}}{*{{.PackageName}}}
+}
+
+type {{.ModelName}} struct{ {{.PackageName}}Controller }
+
+// Displays a page listing the data.
+func ({{.ReciverName}} *{{.ModelName}}) Index(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Displays a page for creating new data.
+func ({{.ReciverName}} *{{.ModelName}}) Create(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Handles a POST request to create new data.
+func ({{.ReciverName}} *{{.ModelName}}) Store(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Displays a page showing detailed data.
+func ({{.ReciverName}} *{{.ModelName}}) Show(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Displays a page for editing existing data.
+func ({{.ReciverName}} *{{.ModelName}}) Edit(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Handles a PUT request to update data.
+func ({{.ReciverName}} *{{.ModelName}}) Update(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}
+
+// Handles a DELETE request to delete data.
+func ({{.ReciverName}} *{{.ModelName}}) Destroy(s support.Refiber) error {
+	return s.Redirect().Back().WithMessage(support.MessageTypeError, "You don't have access").Now()
+}

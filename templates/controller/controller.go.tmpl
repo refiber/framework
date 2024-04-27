@@ -1,0 +1,15 @@
+package {{.PackageName}}
+
+import (
+	support "github.com/refiber/framework/support"
+)
+
+func ({{.PackageName}} *{{.PackageName}}Controller) {{.MethodName}}() *{{.ModelName}} {
+	return &{{.ModelName}}{*{{.PackageName}}}
+}
+
+type {{.ModelName}} struct{ {{.PackageName}}Controller }
+
+func ({{.ReciverName}} *{{.ModelName}}) Index(s support.Refiber) error {
+	return s.GetCtx().SendString("TODO")
+}
