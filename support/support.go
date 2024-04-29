@@ -16,6 +16,7 @@ type Refiber interface {
 	Validate(s interface{}) error
 	CreateValidationErrors(fields []*ValidationErrorField) error
 	NewAuthenticatedUserSession(user interface{}) error
+	UpdateAuthenticatedUserSession(user interface{}) error
 	GetAuthenticatedUserSession(user interface{}) error
 	DestroyAuthenticatedUserSession() error
 	GetSession() *session.Store
