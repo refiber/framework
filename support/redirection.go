@@ -18,6 +18,8 @@ func (r *redirect) Back() *redirectOptions {
 	return &redirectOptions{support: r.support}
 }
 
+// TODO: add to external url (https://inertiajs.com/redirects)
+
 func (r *redirect) To(location string) *redirectOptions {
 	return &redirectOptions{location: &location, support: r.support}
 }
@@ -48,8 +50,8 @@ func (ro *redirectOptions) WithMessage(messageType MessageType, message string) 
 
 func (ro *redirectOptions) Now() error {
 	if ro.location == nil {
-		return ro.support.GetCtx().RedirectBack("/")
+		return ro.support.GetCtx().RedirectBack("/", 303)
 	}
 
-	return ro.support.GetCtx().Redirect(*ro.location)
+	return ro.support.GetCtx().Redirect(*ro.location, 303)
 }
