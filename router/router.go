@@ -79,7 +79,7 @@ func (r *route) Delete(path string, controller Controller, middlewares ...Hanlde
 		return controller(r.support)
 	})
 
-	r.router.Put(path, handlers...)
+	r.router.Delete(path, handlers...)
 	return r
 }
 
