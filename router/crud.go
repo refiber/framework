@@ -28,14 +28,6 @@ const (
 	RouteTypeDestroy
 )
 
-/**
- * For now, customAuthMiddleware is marked as a comment.
- * Initially, I created customAuthMiddleware to add Auth Middleware by default
- * for all routes except RouteTypeIndex and RouteTypeShow. However, upon completion,
- * I realized it's not ideal because you would end up with double Auth middleware
- * if you add route.CRUD into a route group with Auth middleware or add Auth middleware to route.CRUD("/a", func(...), m.Auth).
- */
-
 type Crud struct {
 	Identifier         string
 	Controller         CRUD
@@ -43,7 +35,6 @@ type Crud struct {
 	Except             *[]RouteType
 	middlewareToRoutes []*crudMiddlewareToRoutes
 	availableRoutes    map[RouteType]bool
-	// customAuthMiddleware *Hanlder
 }
 
 func (c *Crud) fillAvailableRoutes() {
@@ -107,10 +98,6 @@ func (c *Crud) routeUses(routeType ...RouteType) bool {
 func (c *Crud) getMiddlewareForRoute(routeType RouteType) []Hanlder {
 	var middlewares = []Hanlder{}
 
-	// if routeType != RouteTypeIndex && routeType != RouteTypeShow {
-	// 	middlewares = append(middlewares, *c.customAuthMiddleware)
-	// }
-
 	for _, mr := range c.middlewareToRoutes {
 		for _, r := range *mr.routeTypes {
 			if r == routeType {
@@ -125,10 +112,6 @@ func (c *Crud) getMiddlewareForRoute(routeType RouteType) []Hanlder {
 func (c *Crud) AddMidlewareToRoutes(middleware Hanlder, routeTypes ...RouteType) {
 	c.middlewareToRoutes = append(c.middlewareToRoutes, &crudMiddlewareToRoutes{middleware, &routeTypes})
 }
-
-// func (c *Crud) SetAuthMiddleware(m Hanlder) {
-// 	c.customAuthMiddleware = &m
-// }
 
 type crudMiddlewareToRoutes struct {
 	middleware Hanlder
@@ -150,23 +133,6 @@ func (r *route) CRUD(path string, handler CrudHandler, middlewares ...Hanlder) {
 	}
 
 	crud.fillAvailableRoutes()
-
-	/**
-	 * by default create, edit, store, update, and destory are protected by auth middleware
-	 * check getMiddlewareForRoute for the logic
-	 */
-	// if crud.customAuthMiddleware == nil {
-	// 	crud.SetAuthMiddleware(func(c *fiber.Ctx) error {
-	// 		var user interface{}
-	// 		r.support.GetAuthenticatedUserSession(&user)
-
-	// 		if user == nil {
-	// 			return support.AuthLoginPage("/login", r.support)
-	// 		}
-
-	// 		return c.Next()
-	// 	})
-	// }
 
 	route := NewRouter(r.router.Group(path, middlewares...), r.support)
 
