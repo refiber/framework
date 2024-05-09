@@ -40,20 +40,64 @@ type Crud struct {
 	Identifier         string
 	Controller         CRUD
 	Only               *[]RouteType
+	Except             *[]RouteType
 	middlewareToRoutes []*crudMiddlewareToRoutes
+	availableRoutes    map[RouteType]bool
 	// customAuthMiddleware *Hanlder
 }
 
+func (c *Crud) fillAvailableRoutes() {
+	c.availableRoutes = map[RouteType]bool{
+		RouteTypeIndex:   true,
+		RouteTypeCreate:  true,
+		RouteTypeStore:   true,
+		RouteTypeShow:    true,
+		RouteTypeEdit:    true,
+		RouteTypeUpdate:  true,
+		RouteTypeDestroy: true,
+	}
+
+	if c.Only == nil && c.Except == nil {
+		return
+	}
+
+	if c.Only != nil {
+		for r := range c.availableRoutes {
+			var available bool
+			for _, o := range *c.Only {
+				if r == o {
+					available = true
+					continue
+				}
+			}
+
+			c.availableRoutes[r] = available
+		}
+	}
+
+	if c.Except != nil {
+		for r := range c.availableRoutes {
+			available := true
+			for _, e := range *c.Except {
+				if r == e {
+					available = false
+					continue
+				}
+			}
+
+			c.availableRoutes[r] = available
+		}
+	}
+}
+
 func (c *Crud) routeUses(routeType ...RouteType) bool {
-	if c.Only == nil {
+	if c.Only == nil && c.Except == nil {
 		return true
 	}
 
-	for _, v := range *c.Only {
-		for _, r := range routeType {
-			if v == r {
-				return true
-			}
+	for _, r := range routeType {
+		if c.availableRoutes[r] {
+			return true
 		}
 	}
 
@@ -96,6 +140,16 @@ type CrudHandler = func(crud *Crud)
 func (r *route) CRUD(path string, handler CrudHandler, middlewares ...Hanlder) {
 	crud := Crud{Identifier: "id"}
 	handler(&crud)
+
+	if crud.Controller == nil {
+		panic(fmt.Sprintf("[route: %s]: controller is not implemented.", path))
+	}
+
+	if crud.Except != nil && crud.Only != nil {
+		panic(fmt.Sprintf("[route: %s]: can't use crud.Except and crud.Only in the same time, please choose one.", path))
+	}
+
+	crud.fillAvailableRoutes()
 
 	/**
 	 * by default create, edit, store, update, and destory are protected by auth middleware
