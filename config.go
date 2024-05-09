@@ -25,7 +25,7 @@ func configDefault(config ...Config) Config {
 
 	if cfg.SessionStorage == nil {
 		storage := badger.New(badger.Config{
-			Database:   "./storage/framework/session.badger",
+			Database:   "./storage/framework/sessions",
 			Reset:      false,
 			GCInterval: 10 * time.Second,
 		})
