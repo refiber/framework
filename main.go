@@ -26,22 +26,22 @@ const (
 	SessionName    = "session"
 )
 
-func New(config fiber.Config) (*fiber.App, router.RouterInterface, support.Refiber) {
-	if config.AppName == "" {
-		config.AppName = "Refiber"
+func New(c ...Config) (*fiber.App, router.RouterInterface, support.Refiber) {
+	config := configDefault(c...)
+
+	fiberConfig := fiber.Config{
+		AppName: config.AppName,
 	}
 
-	if config.Views == nil {
-		engine := html.New("./resources/views", ".html")
-		engine.AddFunc(
-			"raw", func(s string) template.HTML {
-				return template.HTML(s)
-			},
-		)
-		config.Views = engine
-	}
+	engine := html.New("./resources/views", ".html")
+	engine.AddFunc(
+		"raw", func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	)
+	fiberConfig.Views = engine
 
-	app := fiber.New(config)
+	app := fiber.New(fiberConfig)
 
 	app.Static("/", "./public")
 
@@ -50,6 +50,7 @@ func New(config fiber.Config) (*fiber.App, router.RouterInterface, support.Refib
 	 */
 	session := session.New(session.Config{
 		KeyLookup: "cookie:" + SessionName,
+		Storage:   config.SessionStorage,
 	})
 
 	app.Use(csrf.New(csrf.Config{
