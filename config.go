@@ -1,10 +1,7 @@
 package refiber
 
 import (
-	"time"
-
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/storage/badger/v2"
 )
 
 type Config struct {
@@ -12,24 +9,13 @@ type Config struct {
 	SessionStorage fiber.Storage
 }
 
-func configDefault(config ...Config) Config {
-	cfg := Config{}
-
-	if len(config) > 0 {
-		cfg = config[0]
+func configDefault(cfg Config) Config {
+	if cfg.SessionStorage == nil {
+		panic("[config]: SessionStorage can't be null")
 	}
 
 	if cfg.AppName == "" {
 		cfg.AppName = "Refiber"
-	}
-
-	if cfg.SessionStorage == nil {
-		storage := badger.New(badger.Config{
-			Database:   "./storage/framework/sessions",
-			Reset:      false,
-			GCInterval: 10 * time.Second,
-		})
-		cfg.SessionStorage = storage
 	}
 
 	return cfg

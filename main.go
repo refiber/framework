@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/template/html/v2"
+
 	"github.com/refiber/framework/router"
 	"github.com/refiber/framework/support"
 )
@@ -26,8 +27,8 @@ const (
 	SessionName    = "session"
 )
 
-func New(c ...Config) (*fiber.App, router.RouterInterface, support.Refiber) {
-	config := configDefault(c...)
+func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
+	config := configDefault(c)
 
 	fiberConfig := fiber.Config{
 		AppName: config.AppName,
