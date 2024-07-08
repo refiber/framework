@@ -14,25 +14,31 @@ func (s *support) NewAuthenticatedUserSession(user interface{}) error {
 		return err
 	}
 
-	// before reset the session, get redirection from the session, then save redirection to the new session
+	// before destroy the session, get redirection from the session, then save redirection to the new session
 	var redirection string
 	_redirection := session.Get(constant.KeyRedirection + session.ID())
 	if _redirection != nil {
 		redirection = _redirection.(string)
 	}
+	session.Destroy()
 
-	session.Reset()
-	session.SetExpiry((time.Hour * 24) * 7)
-
-	if redirection != "" {
-		session.Set(constant.KeyRedirection+session.ID(), redirection)
+	// get new session
+	sessionNew, err := s.session.Get(s.GetCtx())
+	if err != nil {
+		return err
 	}
 
-	sessionKey := constant.KeyAuth + session.ID()
-	buf, _ := json.Marshal(user)
-	session.Set(sessionKey, buf)
+	sessionNew.SetExpiry((time.Hour * 24) * 7)
 
-	if err := session.Save(); err != nil {
+	if redirection != "" {
+		sessionNew.Set(constant.KeyRedirection+sessionNew.ID(), redirection)
+	}
+
+	sessionKey := constant.KeyAuth + sessionNew.ID()
+	buf, _ := json.Marshal(user)
+	sessionNew.Set(sessionKey, buf)
+
+	if err := sessionNew.Save(); err != nil {
 		return err
 	}
 
