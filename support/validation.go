@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/refiber/framework/constant"
 )
 
@@ -18,6 +19,7 @@ func (s *support) Validate(sct interface{}) error {
 
 	m := make(fiber.Map, len(err.(validator.ValidationErrors)))
 	for _, err := range err.(validator.ValidationErrors) {
+		// use lower case?
 		m[strings.ToLower(err.Field())] = err.Translate(*s.translator)
 	}
 

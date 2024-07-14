@@ -34,7 +34,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		AppName: config.AppName,
 	}
 
-	engine := html.New("./resources/views", ".html")
+	engine := html.New("./resources/views", ".tpl")
 	engine.AddFunc(
 		"raw", func(s string) template.HTML {
 			return template.HTML(s)
