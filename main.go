@@ -1,7 +1,8 @@
 package refiber
 
 import (
-	"html/template"
+	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
 	"github.com/gofiber/fiber/v2/middleware/session"
-	"github.com/gofiber/template/html/v2"
 
+	"github.com/refiber/framework/constant"
 	"github.com/refiber/framework/router"
 	"github.com/refiber/framework/support"
 )
@@ -30,22 +31,6 @@ const (
 func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 	config := configDefault(c)
 
-	fiberConfig := fiber.Config{
-		AppName: config.AppName,
-	}
-
-	engine := html.New("./resources/views", ".tpl")
-	engine.AddFunc(
-		"raw", func(s string) template.HTML {
-			return template.HTML(s)
-		},
-	)
-	fiberConfig.Views = engine
-
-	app := fiber.New(fiberConfig)
-
-	app.Static("/", "./public")
-
 	/**
 	 * Session & crsf
 	 */
@@ -53,6 +38,58 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		KeyLookup: "cookie:" + SessionName,
 		Storage:   config.SessionStorage,
 	})
+
+	fiberConfig := fiber.Config{
+		AppName: config.AppName,
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			code := fiber.StatusInternalServerError
+			message := "Internal Server Error"
+
+			var e *fiber.Error
+			if errors.As(err, &e) {
+				code = e.Code
+				message = e.Message
+			}
+
+			accepts := c.Accepts("html", "json")
+			path := c.Path()
+			if accepts == "json" || strings.HasPrefix(path, "/api/") {
+				return c.Status(code).JSON(fiber.Map{
+					"error": message,
+				})
+			}
+
+			// handle inertia request
+			headers := c.GetReqHeaders()
+			if headerXInertia, exist := headers["X-Inertia"]; exist && headerXInertia[0] == "true" {
+				// TODO: use saveTempSession (refactor it)
+				session, _ := session.Get(c)
+				buf, _ := json.Marshal(fiber.Map{
+					"type":    support.MessageTypeError,
+					"message": message,
+				})
+				session.Set(constant.KeyFlashMessage+session.ID(), buf)
+				session.SetExpiry(time.Minute * 1)
+
+				if err := session.Save(); err != nil {
+					return err
+				}
+
+				return c.RedirectBack("/", 303)
+			}
+
+			return c.Status(fiber.StatusForbidden).Render("error", fiber.Map{
+				"Code":    code,
+				"Message": message,
+			}, "error")
+		},
+	}
+
+	fiberConfig.Views = newTemplateEngine()
+
+	app := fiber.New(fiberConfig)
+
+	app.Static("/", "./public")
 
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:         "header:" + CrsfCookieName,
@@ -62,22 +99,6 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		CookieSessionOnly: true,
 		CookieHTTPOnly:    true,
 		Expiration:        1 * time.Hour,
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			accepts := c.Accepts("html", "json")
-			path := c.Path()
-			if accepts == "json" || strings.HasPrefix(path, "/api/") {
-				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-					"error": "Forbidden",
-				})
-			}
-
-			// TODO: check if request form inertia, then use flash message
-
-			return c.Status(fiber.StatusForbidden).Render("error", fiber.Map{
-				"Title":  "Forbidden",
-				"Status": fiber.StatusForbidden,
-			}, "error")
-		},
 		Extractor:         csrf.CsrfFromCookie(CrsfCookieName),
 		Session:           session,
 		SessionKey:        "fiber.csrf.token",
