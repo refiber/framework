@@ -87,7 +87,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 			return c.Status(code).Render("error", fiber.Map{
 				"Code":    code,
 				"Message": message,
-			}, "error")
+			})
 		},
 	}
 
