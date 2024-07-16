@@ -3,6 +3,7 @@ package refiber
 import (
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +52,11 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 				message = e.Message
 			}
 
+			debug := os.Getenv("DEBUG")
+			if debug == "1" || debug == "true" {
+				message = err.Error()
+			}
+
 			accepts := c.Accepts("html", "json")
 			path := c.Path()
 			if accepts == "json" || strings.HasPrefix(path, "/api/") {
@@ -78,7 +84,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 				return c.RedirectBack("/", 303)
 			}
 
-			return c.Status(fiber.StatusForbidden).Render("error", fiber.Map{
+			return c.Status(code).Render("error", fiber.Map{
 				"Code":    code,
 				"Message": message,
 			}, "error")

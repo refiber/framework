@@ -9,7 +9,11 @@ import (
 
 // TODO: find a way to call this only once every request
 func GetDevelopmentURL() *string {
-	// TODO: skip if env == prod
+	env := os.Getenv("APP_ENV")
+	if env != "local" && env != "dev" {
+		return nil
+	}
+
 	if buf, err := os.ReadFile("./public/hot"); err == nil {
 		url := string(buf)
 		return &url
