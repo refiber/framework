@@ -2,6 +2,7 @@ package refiber
 
 import (
 	"html/template"
+	"os"
 
 	"github.com/gofiber/template/html/v2"
 
@@ -23,6 +24,10 @@ func newTemplateEngine() *html.Engine {
 
 	engine.AddFunc("inertia", func(s string) template.HTML {
 		return template.HTML(s)
+	})
+
+	engine.AddFunc("env", func(s string) string {
+		return os.Getenv(s)
 	})
 
 	return engine
