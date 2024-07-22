@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/refiber/framework/support"
 )
 

@@ -68,13 +68,13 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 			// handle inertia request
 			headers := c.GetReqHeaders()
 			if headerXInertia, exist := headers["X-Inertia"]; exist && headerXInertia[0] == "true" {
-				// TODO: use saveTempSession (refactor it)
+				// TODO: use saveTempData (refactor it)
 				session, _ := session.Get(c)
 				buf, _ := json.Marshal(fiber.Map{
 					"type":    support.MessageTypeError,
 					"message": message,
 				})
-				session.Set(constant.KeyFlashMessage+session.ID(), buf)
+				session.Set(string(constant.SessionKeyFlashMessage)+session.ID(), buf)
 				session.SetExpiry(time.Minute * 1)
 
 				if err := session.Save(); err != nil {
@@ -95,8 +95,6 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 
 	app := fiber.New(fiberConfig)
 
-	app.Static("/", "./public")
-
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:         "header:" + CrsfCookieName,
 		CookieName:        CrsfCookieName,
@@ -110,6 +108,10 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		SessionKey:        "fiber.csrf.token",
 		HandlerContextKey: "fiber.csrf.handler",
 	}))
+
+	// TODO: test again using fiber v3
+	// avoid placing app.Static before any app.Use, as it will cause the app.Use code or middleware to execute twice.
+	app.Static("/", "./public")
 
 	/**
 	 * Validator config

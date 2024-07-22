@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+
 	"github.com/refiber/framework/support"
 	"github.com/refiber/framework/utils"
 )
@@ -48,7 +49,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 	sharedProps := fiber.Map{}
 
 	if session, err := r.s.GetSession().Get(r.s.GetCtx()); err == nil {
-		sharedProps = *support.GetSharedMap(session)
+		sharedProps = *support.GetTempData(session)
 	}
 
 	data := fiber.Map{}

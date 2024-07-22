@@ -1,8 +1,20 @@
 package constant
 
+type SessionKey string
+
 const (
-	KeyErrors       = "form:errors:"
-	KeyAuth         = "auth:"
-	KeyRedirection  = "redirection:"
-	KeyFlashMessage = "flash_message:"
+	SessionKeyError        SessionKey = "form:errors:"
+	SessionKeyAuth         SessionKey = "auth:"
+	SessionKeyRedirection  SessionKey = "redirection:"
+	SessionKeyFlashMessage SessionKey = "flash_message:"
+	SessionKeyShared       SessionKey = "shared:"
 )
+
+func (k SessionKey) IsValid() bool {
+	switch k {
+	case SessionKeyError, SessionKeyAuth, SessionKeyRedirection, SessionKeyFlashMessage, SessionKeyShared:
+		return true
+	}
+
+	return false
+}

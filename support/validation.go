@@ -23,7 +23,7 @@ func (s *support) Validate(sct interface{}) error {
 		m[strings.ToLower(err.Field())] = err.Translate(*s.translator)
 	}
 
-	if err := saveTempSession(s, constant.KeyErrors, &m); err != nil {
+	if err := saveTempData(s, constant.SessionKeyError, &m); err != nil {
 		return err
 	}
 
@@ -37,7 +37,7 @@ type ValidationErrorField struct {
 
 func (s *support) CreateValidationErrors(fields []*ValidationErrorField) error {
 	session, _ := s.session.Get(s.GetCtx())
-	sessionKey := constant.KeyErrors + session.ID()
+	sessionKey := string(constant.SessionKeyError) + session.ID()
 
 	m := fiber.Map{}
 	for _, f := range fields {

@@ -24,7 +24,7 @@ func (r *render) View(view string, data *fiber.Map) error {
 
 	s, err := r.session.Get(r.c)
 	if err == nil {
-		sharedMap := GetSharedMap(s)
+		sharedMap := GetTempData(s)
 		m = utils.MergeFiberMaps(sharedMap, &m)
 	}
 
@@ -39,7 +39,7 @@ func (r *render) JSON(data *fiber.Map, status int) error {
 
 	s, err := r.session.Get(r.c)
 	if err == nil {
-		sharedMap := GetSharedMap(s)
+		sharedMap := GetTempData(s)
 		m = utils.MergeFiberMaps(sharedMap, &m)
 	}
 

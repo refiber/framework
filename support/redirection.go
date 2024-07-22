@@ -42,7 +42,7 @@ type redirectOptions struct {
 func (ro *redirectOptions) WithMessage(messageType MessageType, message string) *redirectOptions {
 	m := fiber.Map{"type": string(messageType), "message": message}
 
-	if err := saveTempSession(ro.support, constant.KeyFlashMessage, &m); err != nil {
+	if err := saveTempData(ro.support, constant.SessionKeyFlashMessage, &m); err != nil {
 		log.Errorw("refiber.support.redirection.WithMessage: failed to save session")
 	}
 

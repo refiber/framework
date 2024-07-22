@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
+
 	"github.com/refiber/framework/constant"
 )
 
@@ -16,7 +17,7 @@ func (s *support) NewAuthenticatedUserSession(user interface{}) error {
 
 	// before destroy the session, get redirection from the session, then save redirection to the new session
 	var redirection string
-	_redirection := session.Get(constant.KeyRedirection + session.ID())
+	_redirection := session.Get(string(constant.SessionKeyRedirection) + session.ID())
 	if _redirection != nil {
 		redirection = _redirection.(string)
 	}
@@ -31,10 +32,10 @@ func (s *support) NewAuthenticatedUserSession(user interface{}) error {
 	sessionNew.SetExpiry((time.Hour * 24) * 7)
 
 	if redirection != "" {
-		sessionNew.Set(constant.KeyRedirection+sessionNew.ID(), redirection)
+		sessionNew.Set(string(constant.SessionKeyRedirection)+sessionNew.ID(), redirection)
 	}
 
-	sessionKey := constant.KeyAuth + sessionNew.ID()
+	sessionKey := string(constant.SessionKeyAuth) + sessionNew.ID()
 	buf, _ := json.Marshal(user)
 	sessionNew.Set(sessionKey, buf)
 
@@ -51,7 +52,7 @@ func (s *support) GetAuthenticatedUserSession(user interface{}) error {
 		return err
 	}
 
-	raw := session.Get(constant.KeyAuth + session.ID())
+	raw := session.Get(string(constant.SessionKeyAuth) + session.ID())
 
 	if data, ok := raw.([]byte); ok {
 		if err := json.Unmarshal(data, &user); err != nil {
@@ -69,7 +70,7 @@ func (s *support) UpdateAuthenticatedUserSession(user interface{}) error {
 	}
 
 	buf, _ := json.Marshal(user)
-	session.Set(constant.KeyAuth+session.ID(), buf)
+	session.Set(string(constant.SessionKeyAuth)+session.ID(), buf)
 
 	if err := session.Save(); err != nil {
 		return err
@@ -91,7 +92,7 @@ func (s *support) DestroyAuthenticatedUserSession() error {
 
 func getRedirectLocation(s Refiber) (location *string, err error) {
 	if session, err := s.GetSession().Get(s.GetCtx()); err == nil {
-		key := constant.KeyRedirection + session.ID()
+		key := string(constant.SessionKeyRedirection) + session.ID()
 		data := session.Get(key)
 		if redirectLocation, ok := data.(string); ok && redirectLocation != "" {
 			session.Delete(key)
@@ -137,7 +138,7 @@ func AuthRedirectionWithMessage(s Refiber, location string, messageType MessageT
 
 func AuthLoginPage(location string, s Refiber) error {
 	if session, err := s.GetSession().Get(s.GetCtx()); err == nil {
-		session.Set(constant.KeyRedirection+session.ID(), s.GetCtx().OriginalURL())
+		session.Set(string(constant.SessionKeyRedirection)+session.ID(), s.GetCtx().OriginalURL())
 		if err := session.Save(); err != nil {
 			log.Errorw("refiber.support.auth.AuthLoginPage: failed to save session")
 		}
