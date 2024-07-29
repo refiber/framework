@@ -109,8 +109,8 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		HandlerContextKey: "fiber.csrf.handler",
 	}))
 
-	// TODO: test again using fiber v3
 	// avoid placing app.Static before any app.Use, as it will cause the app.Use code or middleware to execute twice.
+	// it's fixed on v3: https://github.com/gofiber/fiber/issues/3080
 	app.Static("/", "./public")
 
 	/**
