@@ -9,13 +9,16 @@ import (
 	"github.com/refiber/framework/vite"
 )
 
+// TODO: make this customizable?
+var rootAppFile = "/resources/js/app.tsx"
+
 func createViewData(bufJsonProps *[]byte, viewData *fiber.Map) *fiber.Map {
 	data := fiber.Map{}
 	if viewData != nil {
 		data = *viewData
 	}
 
-	data["props"] = vite.GetScripts("/resources/js/app.tsx")
+	data["props"] = vite.GetScripts(rootAppFile)
 
 	viteDevelopmentURL := vite.GetDevelopmentURL()
 

@@ -1,7 +1,6 @@
 package vite
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -37,7 +36,7 @@ func GetScripts(resources ...string) string {
 
 			data += fmt.Sprintf(`
         %s
-      `, getScirptTag(fmt.Sprintf("%s%s", *developmentURL, r)))
+      `, CreateScriptTag(fmt.Sprintf("%s%s", *developmentURL, r)))
 		}
 
 		scripts := fmt.Sprintf(`
@@ -46,44 +45,31 @@ func GetScripts(resources ...string) string {
 		`, *developmentURL, data)
 
 		data = scripts
-	} else if buf, err := os.ReadFile("./public/build/manifest.json"); err == nil {
-		data = getCompailedScripts(resources, buf)
+	} else if m := GetManifest(); m.data != nil {
+		data = getCompailedScripts(resources, *m)
 	}
 
 	return data
 }
 
-func getCompailedScripts(resources []string, buf []byte) string {
+func getCompailedScripts(resources []string, m manifest) string {
 	var data string
 
-	manifest := make(map[string]interface{})
-	err := json.Unmarshal(buf, &manifest)
-	if err != nil {
-		return data
-	}
-
-	for _, _r := range resources {
-		r := _r
-		// remove / on first char
-		if string(r[0]) == "/" {
-			r = string(r[1:])
-		}
-
-		main := manifest[r].(map[string]interface{})
-		file, ok := main["file"].(string)
-		if !ok {
+	for _, r := range resources {
+		file := m.GetFileByResource(r)
+		if file == nil {
 			continue
 		}
 
-		scripts := getScirptTag(fmt.Sprintf("/build/%s", file))
+		scripts := CreateScriptTag(fmt.Sprintf("/build/%s", *file))
 
-		if css, ok := main["css"].([]interface{}); ok {
+		if css := m.GetCSSbyResource(r); css != nil {
 			cssScripts := ""
 
-			for _, c := range css {
+			for _, c := range *css {
 				cssScripts += fmt.Sprintf(`
         %s
-      `, getScirptTag(fmt.Sprintf("/build/%s", c)))
+      `, CreateScriptTag(fmt.Sprintf("/build/%s", c)))
 			}
 
 			scripts += fmt.Sprintf(`
@@ -96,7 +82,7 @@ func getCompailedScripts(resources []string, buf []byte) string {
 	return data
 }
 
-func getScirptTag(source string) string {
+func CreateScriptTag(source string) string {
 	if strings.Contains(source, ".css") {
 		return fmt.Sprintf(`<link rel="stylesheet" href="%s" />`, source)
 	}
