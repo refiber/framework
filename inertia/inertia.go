@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -18,7 +17,7 @@ type InertiaInterface interface {
 	Render() *render
 }
 
-type PreRenderHanlder = func(string) *string
+type PreRenderHanlder = func(PreRenderInterface) *string
 
 type Config struct {
 	App                      support.Refiber
@@ -78,6 +77,11 @@ func (r *render) DisablePreRender() *render {
 	return r
 }
 
+func (r *render) EnablePreRender() *render {
+	r.preRender = true
+	return r
+}
+
 func (r *render) Page(page string, props *fiber.Map) error {
 	sharedProps := fiber.Map{}
 
@@ -100,7 +104,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 
 	if renderViewTemplate {
 		jsonProps, _ := json.Marshal(data)
-		viewData := createViewData(&jsonProps, r.viewData)
+		viewData, viewDataStruct := createViewData(&jsonProps, r.viewData)
 
 		err := r.s.GetCtx().Render(r.viewTemplate, viewData)
 
@@ -109,19 +113,15 @@ func (r *render) Page(page string, props *fiber.Map) error {
 		if viteDevURL == nil && r.PreRenderHanlder != nil && r.preRender {
 			if manifest := vite.GetManifest(); manifest != nil {
 				// file = "assets/app*.js"
-				if file := manifest.GetFileByResource(rootAppFile); file != nil {
-					if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *file)); err == nil {
+				if filePath := manifest.GetFileByResource(rootAppFile); filePath != nil {
+					if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *filePath)); err == nil {
 						html := string(r.s.GetCtx().Response().Body())
 
-						oldScript := vite.CreateScriptTag(fmt.Sprintf(`/build/%s`, *file))
-						newScript := fmt.Sprintf(`<script type="module">%s</script>`, string(scriptBuf))
+						preRender := newPreRender(&html, filePath, scriptBuf, viewDataStruct)
+						preRender.rendered = r.PreRenderHanlder(preRender)
 
-						html = strings.Replace(html, oldScript, newScript, 1)
-						preRenderedHtml := r.PreRenderHanlder(html)
-
-						if preRenderedHtml != nil {
-							html = strings.Replace(*preRenderedHtml, newScript, oldScript, 1)
-							r.s.GetCtx().Response().SetBody([]byte(html))
+						if preRender.rendered != nil {
+							r.s.GetCtx().Response().SetBody([]byte(preRender.createClientHTML()))
 						}
 					}
 				}

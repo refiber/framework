@@ -22,7 +22,7 @@ import (
 
 // TODO: implement init?
 // TODO: better error log
-// TODO: testing
+// TODO: unit testing
 
 const (
 	CrsfCookieName = "XSRF-TOKEN"

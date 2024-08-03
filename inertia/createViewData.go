@@ -12,7 +12,13 @@ import (
 // TODO: make this customizable?
 var rootAppFile = "/resources/js/app.tsx"
 
-func createViewData(bufJsonProps *[]byte, viewData *fiber.Map) *fiber.Map {
+type viewDataStruct struct {
+	ScriptTags  string
+	DataPageDiv string
+	AllTags     string
+}
+
+func createViewData(bufJsonProps *[]byte, viewData *fiber.Map) (*fiber.Map, *viewDataStruct) {
 	data := fiber.Map{}
 	if viewData != nil {
 		data = *viewData
@@ -36,10 +42,17 @@ func createViewData(bufJsonProps *[]byte, viewData *fiber.Map) *fiber.Map {
   `, *viteDevelopmentURL, data["props"])
 	}
 
-	data["props"] = fmt.Sprintf(`
-		%s
-		<div id="app" data-page=%#v></div> 
-	`, data["props"], html.EscapeString(string(*bufJsonProps)))
+	vds := viewDataStruct{
+		ScriptTags:  data["props"].(string),
+		DataPageDiv: fmt.Sprintf(`<div id="app" data-page=%#v></div>`, html.EscapeString(string(*bufJsonProps))),
+	}
 
-	return &data
+	vds.AllTags = fmt.Sprintf(`
+		%s
+		%s
+	`, vds.ScriptTags, vds.DataPageDiv)
+
+	data["props"] = vds.AllTags
+
+	return &data, &vds
 }
