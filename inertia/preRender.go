@@ -7,37 +7,26 @@ import (
 	"github.com/refiber/framework/vite"
 )
 
-// As much as possible, try to avoid using regexp, use strings instead
+// The goal of pre-rendering is to render the app before sending it to the user, similar to Server Side Rendering (SSR), but without requiring Node.js.
+// How does it work? Refiber provides safe HTML data (HTML + inline JavaScript) to your app through PreRenderHandler. Your app then uses a headless browser to render the HTML and JavaScript. Tools like chromedp can help with this process, and you will need Chrome or Chromium installed on your machine.
+// What about performance? I didn't use any fancy testing tools, just relied on Chrome DevTools to check request times in the Network tab. I'm using a MacBook Pro M1 with 16 GB of memory, so the results might be different on your machine. Using the default Refiber template v0.1.0-beta, I observed the following:
+// - Without pre-render: 3ms request time.
+// - With pre-render: 48ms request time.
 
 type PreRenderInterface interface {
 	GetSafeHTML() string
+	GetCompailedJs() []byte
+	GetProps() []byte
 }
 
-func extractBody(html string) string {
-	startTag := "<body>"
-	endTag := "</body>"
-
-	startIndex := strings.Index(html, startTag)
-	if startIndex == -1 {
-		return ""
-	}
-
-	startIndex += len(startTag)
-	endIndex := strings.Index(html[startIndex:], endTag)
-	if endIndex == -1 {
-		return ""
-	}
-
-	endIndex += startIndex
-	return html[startIndex:endIndex]
-}
-
-func newPreRender(html *string, sourceFilePath *string, scriptBuf []byte, vds *viewDataStruct) *preRender {
+func newPreRender(html *string, sourceFilePath *string, scriptBuf []byte, vds *viewDataStruct, jsonProps []byte) *preRender {
 	pr := preRender{
 		base:        *html,
 		odlJsScript: vite.CreateScriptTag(fmt.Sprintf(`/build/%s`, *sourceFilePath)),
 		newJsScript: []byte(fmt.Sprintf(`<script type="module">%s</script>`, string(scriptBuf))),
 		vds:         vds,
+		jsonProps:   jsonProps,
+		compailedJs: scriptBuf,
 	}
 
 	pr.injectedScript = strings.Replace(
@@ -62,6 +51,8 @@ type preRender struct {
 	newJsScript    []byte
 	rendered       *string
 	vds            *viewDataStruct
+	jsonProps      []byte
+	compailedJs    []byte
 }
 
 // Will return raw html for pre-render
@@ -89,12 +80,20 @@ func (pr *preRender) GetSafeHTML() string {
 	return html
 }
 
-func (pr *preRender) createClientHTML() string {
+func (pr *preRender) GetProps() []byte {
+	return pr.jsonProps
+}
+
+func (pr *preRender) GetCompailedJs() []byte {
+	return pr.compailedJs
+}
+
+func (pr *preRender) createClientHTML() []byte {
 	preRenderedBody := strings.ReplaceAll(
 		extractBody(*pr.rendered),
 		string(pr.newJsScript),
 		pr.vds.ScriptTags,
 	)
 
-	return strings.Replace(strings.Replace(pr.injectedScript, pr.vds.DataPageDiv, "", 1), string(pr.newJsScript), preRenderedBody, 1)
+	return []byte(strings.Replace(strings.Replace(pr.injectedScript, pr.vds.DataPageDiv, "", 1), string(pr.newJsScript), preRenderedBody, 1))
 }

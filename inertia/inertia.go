@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/refiber/framework/support"
 	"github.com/refiber/framework/utils"
@@ -17,12 +18,17 @@ type InertiaInterface interface {
 	Render() *render
 }
 
-type PreRenderHanlder = func(PreRenderInterface) *string
+type (
+	PreRenderHanlder = func(PreRenderInterface) *string
+	SSRHanlder       = func(SSRInterface) *string
+)
 
 type Config struct {
 	App                      support.Refiber
 	PreRenderHanlder         PreRenderHanlder
+	SSRHanlder               SSRHanlder
 	EnablePreRenderByDefault bool
+	EnableSSRByDefault       bool
 	ViewTemplate             string
 }
 
@@ -31,7 +37,9 @@ func New(c Config) *inertia {
 		s:                        c.App,
 		viewTemplate:             "app",
 		PreRenderHanlder:         c.PreRenderHanlder,
+		SSRHanlder:               c.SSRHanlder,
 		EnablePreRenderByDefault: c.EnablePreRenderByDefault,
+		EnableSSRByDefault:       c.EnableSSRByDefault,
 	}
 
 	if c.ViewTemplate != "" {
@@ -45,7 +53,9 @@ type inertia struct {
 	s                        support.Refiber
 	viewTemplate             string
 	PreRenderHanlder         PreRenderHanlder
+	SSRHanlder               SSRHanlder
 	EnablePreRenderByDefault bool
+	EnableSSRByDefault       bool
 }
 
 func (i *inertia) Render() *render {
@@ -53,6 +63,7 @@ func (i *inertia) Render() *render {
 	r.inertia = i
 	r.viewTemplate = i.viewTemplate
 	r.preRender = i.EnablePreRenderByDefault
+	r.ssr = i.EnableSSRByDefault
 
 	return r
 }
@@ -65,6 +76,7 @@ type render struct {
 	*inertia
 	viewData  *fiber.Map
 	preRender bool
+	ssr       bool
 }
 
 func (r *render) SetViewData(data *fiber.Map) *render {
@@ -79,6 +91,16 @@ func (r *render) DisablePreRender() *render {
 
 func (r *render) EnablePreRender() *render {
 	r.preRender = true
+	return r
+}
+
+func (r *render) DisableSSR() *render {
+	r.ssr = false
+	return r
+}
+
+func (r *render) EnableSSR() *render {
+	r.ssr = true
 	return r
 }
 
@@ -108,20 +130,43 @@ func (r *render) Page(page string, props *fiber.Map) error {
 
 		err := r.s.GetCtx().Render(r.viewTemplate, viewData)
 
-		// pre-render only available on production
+		if r.PreRenderHanlder != nil && r.SSRHanlder != nil {
+			panic("[inertia]: Can't use pre-render and ssr at the same time, please remove one of the handler (PreRenderHanlder or SSRHanlder)")
+		}
+
+		// pre-render and ssr only available on production
 		viteDevURL := vite.GetDevelopmentURL()
-		if viteDevURL == nil && r.PreRenderHanlder != nil && r.preRender {
+		if viteDevURL == nil {
 			if manifest := vite.GetManifest(); manifest != nil {
-				// file = "assets/app*.js"
-				if filePath := manifest.GetFileByResource(rootAppFile); filePath != nil {
-					if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *filePath)); err == nil {
-						html := string(r.s.GetCtx().Response().Body())
+				if r.SSRHanlder != nil && r.ssr {
+					html := r.s.GetCtx().Response().Body()
+					ssr, err := newSSR(html, jsonProps, viewDataStruct)
+					if err != nil {
+						log.Error(err)
+					} else {
+						ssr.results = r.SSRHanlder(ssr)
 
-						preRender := newPreRender(&html, filePath, scriptBuf, viewDataStruct)
-						preRender.rendered = r.PreRenderHanlder(preRender)
+						newHTML, err := ssr.createClientHTML()
+						if err != nil {
+							log.Error(err)
+						}
 
-						if preRender.rendered != nil {
-							r.s.GetCtx().Response().SetBody([]byte(preRender.createClientHTML()))
+						if newHTML != nil {
+							r.s.GetCtx().Response().SetBody(newHTML)
+						}
+					}
+				} else if r.PreRenderHanlder != nil && r.preRender {
+					// file = "assets/app*.js"
+					if filePath := manifest.GetCompailedFileNameByResource(rootAppFile); filePath != nil {
+						if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *filePath)); err == nil {
+							html := string(r.s.GetCtx().Response().Body())
+
+							preRender := newPreRender(&html, filePath, scriptBuf, viewDataStruct, jsonProps)
+							preRender.rendered = r.PreRenderHanlder(preRender)
+
+							if preRender.rendered != nil {
+								r.s.GetCtx().Response().SetBody(preRender.createClientHTML())
+							}
 						}
 					}
 				}

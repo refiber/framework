@@ -5,6 +5,13 @@ import (
 	"os"
 )
 
+type ManifestInterface interface {
+	GetDataByResource(resource string) map[string]interface{}
+	GetCompailedFileNameByResource(resource string) *string
+	GetCompailedCSSFileNamesByResource(resource string) *[]*string
+	GetCompailedImportFileNamesByResource(resource string) *[]*string
+}
+
 type manifest struct {
 	data map[string]interface{}
 }
@@ -44,8 +51,8 @@ func (m *manifest) GetDataByResource(resource string) map[string]interface{} {
 	return main
 }
 
-// will return value of file key, example: "file": "assets/app.js"
-func (m *manifest) GetFileByResource(resource string) *string {
+// will return "assets/app*.js"
+func (m *manifest) GetCompailedFileNameByResource(resource string) *string {
 	main := m.GetDataByResource(resource)
 	if main == nil {
 		return nil
@@ -59,16 +66,35 @@ func (m *manifest) GetFileByResource(resource string) *string {
 	return &file
 }
 
-func (m *manifest) GetCSSbyResource(resource string) *[]interface{} {
+func (m *manifest) GetCompailedCSSFileNamesByResource(resource string) *[]*string {
+	return m.getManyFileNameByResourceAndKey(resource, "css")
+}
+
+func (m *manifest) GetCompailedImportFileNamesByResource(resource string) *[]*string {
+	return m.getManyFileNameByResourceAndKey(resource, "imports")
+}
+
+func (m *manifest) getManyFileNameByResourceAndKey(resource, key string) *[]*string {
 	main := m.GetDataByResource(resource)
 	if main == nil {
 		return nil
 	}
 
-	css, ok := main["css"].([]interface{})
+	data, ok := main[key].([]interface{})
 	if !ok {
 		return nil
 	}
 
-	return &css
+	var results []*string
+
+	for _, v := range data {
+		value, ok := v.(string)
+		if !ok {
+			continue
+		}
+
+		results = append(results, &value)
+	}
+
+	return &results
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var BuildPath = "./public/build"
+
 // TODO: find a way to call this only once every request
 func GetDevelopmentURL() *string {
 	env := os.Getenv("APP_ENV")
@@ -56,20 +58,24 @@ func getCompailedScripts(resources []string, m manifest) string {
 	var data string
 
 	for _, r := range resources {
-		file := m.GetFileByResource(r)
+		file := m.GetCompailedFileNameByResource(r)
 		if file == nil {
 			continue
 		}
 
 		scripts := CreateScriptTag(fmt.Sprintf("/build/%s", *file))
 
-		if css := m.GetCSSbyResource(r); css != nil {
+		if css := m.GetCompailedCSSFileNamesByResource(r); css != nil {
 			cssScripts := ""
 
 			for _, c := range *css {
+				if c == nil {
+					continue
+				}
+
 				cssScripts += fmt.Sprintf(`
-        %s
-      `, CreateScriptTag(fmt.Sprintf("/build/%s", c)))
+          %s
+        `, CreateScriptTag(fmt.Sprintf("/build/%s", *c)))
 			}
 
 			scripts += fmt.Sprintf(`
