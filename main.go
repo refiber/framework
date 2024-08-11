@@ -130,14 +130,6 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 	 */
 	support := support.NewSupport(session, validate, &translator)
 
-	/**
-	 * Router
-	 */
-	app.Use(func(c *fiber.Ctx) error {
-		support.Ctx = c
-		return c.Next()
-	})
-
 	rootRoter := app.Group("")
 	router := router.NewRouter(rootRoter, support)
 

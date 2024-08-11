@@ -3,17 +3,19 @@ package router
 import (
 	"fmt"
 
+	"github.com/gofiber/fiber/v2"
+
 	"github.com/refiber/framework/support"
 )
 
 type CRUD interface {
-	Index(support.Refiber) error
-	Create(support.Refiber) error
-	Store(support.Refiber) error
-	Show(support.Refiber) error
-	Edit(support.Refiber) error
-	Update(support.Refiber) error
-	Destroy(support.Refiber) error
+	Index(support.Refiber, *fiber.Ctx) error
+	Create(support.Refiber, *fiber.Ctx) error
+	Store(support.Refiber, *fiber.Ctx) error
+	Show(support.Refiber, *fiber.Ctx) error
+	Edit(support.Refiber, *fiber.Ctx) error
+	Update(support.Refiber, *fiber.Ctx) error
+	Destroy(support.Refiber, *fiber.Ctx) error
 }
 
 type RouteType int8
@@ -96,7 +98,7 @@ func (c *Crud) routeUses(routeType ...RouteType) bool {
 }
 
 func (c *Crud) getMiddlewareForRoute(routeType RouteType) []Hanlder {
-	var middlewares = []Hanlder{}
+	middlewares := []Hanlder{}
 
 	for _, mr := range c.middlewareToRoutes {
 		for _, r := range *mr.routeTypes {

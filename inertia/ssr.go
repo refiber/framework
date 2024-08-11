@@ -8,7 +8,8 @@ import (
 )
 
 type SSRInterface interface {
-	GetCompailedScripts() []byte
+	GetBundledScripts() []byte
+	GetScripts() map[string][]byte
 }
 
 var (
@@ -24,14 +25,13 @@ func newSSR(html, props []byte, vds *viewDataStruct) (*ssr, error) {
 		return nil, err
 	}
 
-	bundledScript := []byte(fmt.Sprintf(
-		`%s %s (async () => JSON.stringify(await renderApp(%s)) )();`,
-		textEncoderPolyfill+processPolyfill+consolePolyfill,
-		string(scriptBuf),
-		string(props),
-	))
+	scripts := make(map[string][]byte, 2)
+	scripts["main.js"] = append([]byte(fmt.Sprintf(`%s`, textEncoderPolyfill+processPolyfill+consolePolyfill)), scriptBuf...)
+	scripts["run.js"] = []byte(fmt.Sprintf(`(async () => JSON.stringify(await renderApp(%s)) )();`, string(props)))
 
-	ssr := ssr{html: html, vds: vds, bundledScript: bundledScript}
+	bundledScript := append(scripts["main.js"], scripts["run.js"]...)
+
+	ssr := ssr{html: html, vds: vds, bundledScript: bundledScript, scripts: scripts}
 	return &ssr, nil
 }
 
@@ -40,9 +40,14 @@ type ssr struct {
 	bundledScript []byte
 	results       *string
 	vds           *viewDataStruct
+	scripts       map[string][]byte
 }
 
-func (s *ssr) GetCompailedScripts() []byte {
+func (s *ssr) GetScripts() map[string][]byte {
+	return s.scripts
+}
+
+func (s *ssr) GetBundledScripts() []byte {
 	return s.bundledScript
 }
 

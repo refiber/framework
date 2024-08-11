@@ -7,19 +7,27 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"github.com/refiber/framework/constant"
 )
 
-func saveTempData(s *support, key constant.SessionKey, data *fiber.Map) error {
+func (s *support) SharedData(ctx *fiber.Ctx) *sharedData {
+	return &sharedData{s, ctx}
+}
+
+type sharedData struct {
+	support *support
+	ctx     *fiber.Ctx
+}
+
+func (s *sharedData) saveTempData(key constant.SessionKey, data *fiber.Map) error {
 	if !key.IsValid() {
 		return errors.New("Invalid SessinKey")
 	}
 
 	buf, _ := json.Marshal(data)
 
-	session, _ := s.session.Get(s.GetCtx())
+	session, _ := s.support.sessionStore.Get(s.ctx)
 	session.Set(string(key)+session.ID(), buf)
 	session.SetExpiry(time.Second * 15)
 
@@ -30,13 +38,13 @@ func saveTempData(s *support, key constant.SessionKey, data *fiber.Map) error {
 	return nil
 }
 
-func (s *support) SetSharedData(data fiber.Map) error {
-	err := saveTempData(s, constant.SessionKeyShared, &data)
+func (s *sharedData) Set(data fiber.Map) error {
+	err := s.saveTempData(constant.SessionKeyShared, &data)
 	return err
 }
 
-func (s *support) GetSharedData() (*fiber.Map, error) {
-	session, err := s.session.Get(s.GetCtx())
+func (s *sharedData) Get() (*fiber.Map, error) {
+	session, err := s.support.sessionStore.Get(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,12 +64,18 @@ func (s *support) GetSharedData() (*fiber.Map, error) {
 	return &d, nil
 }
 
-func GetTempData(session *session.Session) *fiber.Map {
+func (s *sharedData) GetTemp() *fiber.Map {
 	m := make(fiber.Map)
 	m["errors"] = fiber.Map{}
 	m["auth"] = new(fiber.Map)
 	m["flash"] = new(fiber.Map)
 	m["shared"] = new(fiber.Map)
+
+	session, err := s.support.sessionStore.Get(s.ctx)
+	if err != nil {
+		log.Errorf("refiber.support.session.GetTempData:", err)
+		return &m
+	}
 
 	/**
 	 * Form Errors

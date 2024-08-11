@@ -8,48 +8,35 @@ import (
 )
 
 type Refiber interface {
-	Render() *render
-	Validate(s interface{}) error
-	CreateValidationErrors(fields []*ValidationErrorField) error
-	NewAuthenticatedUserSession(user interface{}) error
-	UpdateAuthenticatedUserSession(user interface{}) error
-	GetAuthenticatedUserSession(user interface{}) error
-	DestroyAuthenticatedUserSession() error
-	GetSession() *session.Store
-	GetValidate() *validator.Validate
+	GetSessionStore() *session.Store
+	GetValidator() *validator.Validate
 	GetTranslator() *ut.Translator
-	Redirect() *redirect
-	GetCtx() *fiber.Ctx
-	SetSharedData(data fiber.Map) error
+
+	Render(*fiber.Ctx) *render
+	Redirect(*fiber.Ctx) *redirect
+	Auth(*fiber.Ctx) *auth
+	SharedData(*fiber.Ctx) *sharedData
+	Validation(*fiber.Ctx) *validation
 }
 
 func NewSupport(session *session.Store, validate *validator.Validate, translator *ut.Translator) *support {
-	return &support{session, validate, translator, nil}
+	return &support{session, validate, translator}
 }
 
 type support struct {
-	session    *session.Store
-	validate   *validator.Validate
-	translator *ut.Translator
-	Ctx        *fiber.Ctx
+	sessionStore *session.Store
+	validator    *validator.Validate
+	translator   *ut.Translator
 }
 
-func (s *support) GetSession() *session.Store {
-	return s.session
+func (s *support) GetSessionStore() *session.Store {
+	return s.sessionStore
 }
 
-func (s *support) GetValidate() *validator.Validate {
-	return s.validate
+func (s *support) GetValidator() *validator.Validate {
+	return s.validator
 }
 
 func (s *support) GetTranslator() *ut.Translator {
 	return s.translator
-}
-
-func (s *support) GetCtx() *fiber.Ctx {
-	return s.Ctx
-}
-
-func (s *support) SetCtx(ctx *fiber.Ctx) {
-	s.Ctx = ctx
 }

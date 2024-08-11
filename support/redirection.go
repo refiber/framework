@@ -7,22 +7,24 @@ import (
 	"github.com/refiber/framework/constant"
 )
 
-func (s *support) Redirect() *redirect {
-	return &redirect{s}
+func (s *support) Redirect(ctx *fiber.Ctx) *redirect {
+	return &redirect{s, ctx, s.SharedData(ctx)}
 }
 
 type redirect struct {
-	support *support
+	support    *support
+	ctx        *fiber.Ctx
+	sharedData *sharedData
 }
 
 func (r *redirect) Back() *redirectOptions {
-	return &redirectOptions{support: r.support}
+	return &redirectOptions{redirect: r}
 }
 
 // TODO: add to external url (https://inertiajs.com/redirects)
 
 func (r *redirect) To(location string) *redirectOptions {
-	return &redirectOptions{location: &location, support: r.support}
+	return &redirectOptions{redirect: r, location: &location}
 }
 
 type MessageType string
@@ -35,14 +37,14 @@ const (
 )
 
 type redirectOptions struct {
+	*redirect
 	location *string
-	support  *support
 }
 
 func (ro *redirectOptions) WithMessage(messageType MessageType, message string) *redirectOptions {
 	m := fiber.Map{"type": string(messageType), "message": message}
 
-	if err := saveTempData(ro.support, constant.SessionKeyFlashMessage, &m); err != nil {
+	if err := ro.sharedData.saveTempData(constant.SessionKeyFlashMessage, &m); err != nil {
 		log.Errorw("refiber.support.redirection.WithMessage: failed to save session")
 	}
 
@@ -51,8 +53,8 @@ func (ro *redirectOptions) WithMessage(messageType MessageType, message string) 
 
 func (ro *redirectOptions) Now() error {
 	if ro.location == nil {
-		return ro.support.GetCtx().RedirectBack("/", 303)
+		return ro.ctx.RedirectBack("/", 303)
 	}
 
-	return ro.support.GetCtx().Redirect(*ro.location, 303)
+	return ro.ctx.Redirect(*ro.location, 303)
 }

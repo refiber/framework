@@ -2,18 +2,18 @@ package support
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"github.com/refiber/framework/utils"
 )
 
-func (s *support) Render() *render {
-	return &render{s.GetCtx(), s.session}
+func (s *support) Render(ctx *fiber.Ctx) *render {
+	return &render{ctx, s, s.SharedData(ctx)}
 }
 
 type render struct {
-	c       *fiber.Ctx
-	session *session.Store
+	ctx        *fiber.Ctx
+	support    *support
+	sharedData *sharedData
 }
 
 func (r *render) View(view string, data *fiber.Map) error {
@@ -22,13 +22,10 @@ func (r *render) View(view string, data *fiber.Map) error {
 		m = *data
 	}
 
-	s, err := r.session.Get(r.c)
-	if err == nil {
-		sharedMap := GetTempData(s)
-		m = utils.MergeFiberMaps(sharedMap, &m)
-	}
+	sharedMap := r.sharedData.GetTemp()
+	m = utils.MergeFiberMaps(sharedMap, &m)
 
-	return r.c.Render(view, m)
+	return r.ctx.Render(view, m)
 }
 
 func (r *render) JSON(data *fiber.Map, status int) error {
@@ -37,11 +34,8 @@ func (r *render) JSON(data *fiber.Map, status int) error {
 		m = *data
 	}
 
-	s, err := r.session.Get(r.c)
-	if err == nil {
-		sharedMap := GetTempData(s)
-		m = utils.MergeFiberMaps(sharedMap, &m)
-	}
+	sharedMap := r.sharedData.GetTemp()
+	m = utils.MergeFiberMaps(sharedMap, &m)
 
-	return r.c.Status(status).JSON(m)
+	return r.ctx.Status(status).JSON(m)
 }

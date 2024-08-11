@@ -4,13 +4,23 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/refiber/framework/constant"
 )
 
-func (s *support) NewAuthenticatedUserSession(user interface{}) error {
-	session, err := s.session.Get(s.GetCtx())
+func (s *support) Auth(ctx *fiber.Ctx) *auth {
+	return &auth{s, ctx}
+}
+
+type auth struct {
+	support *support
+	ctx     *fiber.Ctx
+}
+
+func (a *auth) NewAuthenticatedUserSession(user interface{}) error {
+	session, err := a.support.sessionStore.Get(a.ctx)
 	if err != nil {
 		return err
 	}
@@ -24,7 +34,7 @@ func (s *support) NewAuthenticatedUserSession(user interface{}) error {
 	session.Destroy()
 
 	// get new session
-	sessionNew, err := s.session.Get(s.GetCtx())
+	sessionNew, err := a.support.sessionStore.Get(a.ctx)
 	if err != nil {
 		return err
 	}
@@ -46,8 +56,8 @@ func (s *support) NewAuthenticatedUserSession(user interface{}) error {
 	return nil
 }
 
-func (s *support) GetAuthenticatedUserSession(user interface{}) error {
-	session, err := s.session.Get(s.GetCtx())
+func (a *auth) GetAuthenticatedUserSession(user interface{}) error {
+	session, err := a.support.sessionStore.Get(a.ctx)
 	if err != nil {
 		return err
 	}
@@ -63,8 +73,8 @@ func (s *support) GetAuthenticatedUserSession(user interface{}) error {
 	return nil
 }
 
-func (s *support) UpdateAuthenticatedUserSession(user interface{}) error {
-	session, err := s.session.Get(s.GetCtx())
+func (a *auth) UpdateAuthenticatedUserSession(user interface{}) error {
+	session, err := a.support.sessionStore.Get(a.ctx)
 	if err != nil {
 		return err
 	}
@@ -79,8 +89,8 @@ func (s *support) UpdateAuthenticatedUserSession(user interface{}) error {
 	return nil
 }
 
-func (s *support) DestroyAuthenticatedUserSession() error {
-	session, err := s.session.Get(s.GetCtx())
+func (a *auth) DestroyAuthenticatedUserSession() error {
+	session, err := a.support.sessionStore.Get(a.ctx)
 	if err != nil {
 		return err
 	}
@@ -90,8 +100,9 @@ func (s *support) DestroyAuthenticatedUserSession() error {
 	return nil
 }
 
-func getRedirectLocation(s Refiber) (location *string, err error) {
-	if session, err := s.GetSession().Get(s.GetCtx()); err == nil {
+// get protected url
+func getRedirectLocation(a *auth) (location *string, err error) {
+	if session, err := a.support.sessionStore.Get(a.ctx); err == nil {
 		key := string(constant.SessionKeyRedirection) + session.ID()
 		data := session.Get(key)
 		if redirectLocation, ok := data.(string); ok && redirectLocation != "" {
@@ -106,43 +117,44 @@ func getRedirectLocation(s Refiber) (location *string, err error) {
 	return nil, err
 }
 
-func AuthRedirection(s Refiber, location string) error {
+func (a *auth) RedirectTo(defaultLocation string) error {
 	var l *string
-	l = &location
+	l = &defaultLocation
 
-	if redirectLocation, err := getRedirectLocation(s); redirectLocation != nil {
+	if redirectLocation, err := getRedirectLocation(a); redirectLocation != nil {
 		if err != nil {
-			log.Errorf("refiber.auth.AuthRedirection:", err)
+			log.Errorf("refiber.support.auth.RedirectTo:", err)
 		}
 
 		l = redirectLocation
 	}
 
-	return s.Redirect().To(*l).Now()
+	return a.support.Redirect(a.ctx).To(*l).Now()
 }
 
-func AuthRedirectionWithMessage(s Refiber, location string, messageType MessageType, message string) error {
+func (a *auth) RedirectToWithMessage(defaultLocation string, messageType MessageType, message string) error {
 	var l *string
-	l = &location
+	l = &defaultLocation
 
-	if redirectLocation, err := getRedirectLocation(s); redirectLocation != nil {
+	if redirectLocation, err := getRedirectLocation(a); redirectLocation != nil {
 		if err != nil {
-			log.Errorf("refiber.auth.AuthRedirection:", err)
+			log.Errorf("refiber.support.auth.RedirectToWithMessage:", err)
 		}
 
 		l = redirectLocation
 	}
 
-	return s.Redirect().To(*l).WithMessage(messageType, message).Now()
+	return a.support.Redirect(a.ctx).To(*l).WithMessage(messageType, message).Now()
 }
 
-func AuthLoginPage(location string, s Refiber) error {
-	if session, err := s.GetSession().Get(s.GetCtx()); err == nil {
-		session.Set(string(constant.SessionKeyRedirection)+session.ID(), s.GetCtx().OriginalURL())
+func (a *auth) LoginPage(location string) error {
+	// save protected url, then redirect back to the protected url after login
+	if session, err := a.support.GetSessionStore().Get(a.ctx); err == nil {
+		session.Set(string(constant.SessionKeyRedirection)+session.ID(), a.ctx.OriginalURL())
 		if err := session.Save(); err != nil {
-			log.Errorw("refiber.support.auth.AuthLoginPage: failed to save session")
+			log.Errorw("refiber.support.auth.LoginPage: failed to save session")
 		}
 	}
 
-	return s.GetCtx().Redirect(location)
+	return a.ctx.Redirect(location)
 }

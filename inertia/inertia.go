@@ -15,7 +15,7 @@ import (
 
 type InertiaInterface interface {
 	SetViewTemplate(view string)
-	Render() *render
+	Render(*fiber.Ctx) *render
 }
 
 type (
@@ -34,7 +34,7 @@ type Config struct {
 
 func New(c Config) *inertia {
 	i := inertia{
-		s:                        c.App,
+		support:                  c.App,
 		viewTemplate:             "app",
 		PreRenderHanlder:         c.PreRenderHanlder,
 		SSRHanlder:               c.SSRHanlder,
@@ -50,7 +50,7 @@ func New(c Config) *inertia {
 }
 
 type inertia struct {
-	s                        support.Refiber
+	support                  support.Refiber
 	viewTemplate             string
 	PreRenderHanlder         PreRenderHanlder
 	SSRHanlder               SSRHanlder
@@ -58,9 +58,10 @@ type inertia struct {
 	EnableSSRByDefault       bool
 }
 
-func (i *inertia) Render() *render {
+func (i *inertia) Render(ctx *fiber.Ctx) *render {
 	r := &render{}
 	r.inertia = i
+	r.ctx = ctx
 	r.viewTemplate = i.viewTemplate
 	r.preRender = i.EnablePreRenderByDefault
 	r.ssr = i.EnableSSRByDefault
@@ -77,6 +78,7 @@ type render struct {
 	viewData  *fiber.Map
 	preRender bool
 	ssr       bool
+	ctx       *fiber.Ctx
 }
 
 func (r *render) SetViewData(data *fiber.Map) *render {
@@ -107,18 +109,18 @@ func (r *render) EnableSSR() *render {
 func (r *render) Page(page string, props *fiber.Map) error {
 	sharedProps := fiber.Map{}
 
-	if session, err := r.s.GetSession().Get(r.s.GetCtx()); err == nil {
-		sharedProps = *support.GetTempData(session)
+	if data := r.support.SharedData(r.ctx).GetTemp(); data != nil {
+		sharedProps = *data
 	}
 
 	data := fiber.Map{}
-	data["url"] = r.s.GetCtx().OriginalURL()
+	data["url"] = r.ctx.OriginalURL()
 	v := utils.GetMD5Hash("./public/build/manifest.json")
 	data["version"] = v
 	data["component"] = page
 	data["props"] = utils.MergeFiberMaps(&sharedProps, props)
 
-	headers := r.s.GetCtx().GetReqHeaders()
+	headers := r.ctx.GetReqHeaders()
 
 	headerXInertia, exist := headers["X-Inertia"]
 	headerXInertiaVersion, exist2 := headers["X-Inertia-Version"]
@@ -128,7 +130,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 		jsonProps, _ := json.Marshal(data)
 		viewData, viewDataStruct := createViewData(&jsonProps, r.viewData)
 
-		err := r.s.GetCtx().Render(r.viewTemplate, viewData)
+		err := r.ctx.Render(r.viewTemplate, viewData)
 
 		if r.PreRenderHanlder != nil && r.SSRHanlder != nil {
 			panic("[inertia]: Can't use pre-render and ssr at the same time, please remove one of the handler (PreRenderHanlder or SSRHanlder)")
@@ -139,7 +141,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 		if viteDevURL == nil {
 			if manifest := vite.GetManifest(); manifest != nil {
 				if r.SSRHanlder != nil && r.ssr {
-					html := r.s.GetCtx().Response().Body()
+					html := r.ctx.Response().Body()
 					ssr, err := newSSR(html, jsonProps, viewDataStruct)
 					if err != nil {
 						log.Error(err)
@@ -152,20 +154,20 @@ func (r *render) Page(page string, props *fiber.Map) error {
 						}
 
 						if newHTML != nil {
-							r.s.GetCtx().Response().SetBody(newHTML)
+							r.ctx.Response().SetBody(newHTML)
 						}
 					}
 				} else if r.PreRenderHanlder != nil && r.preRender {
 					// file = "assets/app*.js"
 					if filePath := manifest.GetCompailedFileNameByResource(rootAppFile); filePath != nil {
 						if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *filePath)); err == nil {
-							html := string(r.s.GetCtx().Response().Body())
+							html := string(r.ctx.Response().Body())
 
 							preRender := newPreRender(&html, filePath, scriptBuf, viewDataStruct, jsonProps)
 							preRender.rendered = r.PreRenderHanlder(preRender)
 
 							if preRender.rendered != nil {
-								r.s.GetCtx().Response().SetBody(preRender.createClientHTML())
+								r.ctx.Response().SetBody(preRender.createClientHTML())
 							}
 						}
 					}
@@ -176,7 +178,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 		return err
 	}
 
-	r.s.GetCtx().Response().Header.Set("X-Inertia", "true")
+	r.ctx.Response().Header.Set("X-Inertia", "true")
 
-	return r.s.GetCtx().Status(fiber.StatusOK).JSON(data)
+	return r.ctx.Status(fiber.StatusOK).JSON(data)
 }

@@ -26,7 +26,7 @@ type route struct {
 	support support.Refiber
 }
 
-type Controller = func(support.Refiber) error
+type Controller = func(support.Refiber, *fiber.Ctx) error
 
 type Hanlder = func(*fiber.Ctx) error
 
@@ -37,7 +37,7 @@ func (r *route) Group(path string, middlewares ...Hanlder) *route {
 func (r *route) Get(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Get(path, handlers...)
@@ -47,7 +47,7 @@ func (r *route) Get(path string, controller Controller, middlewares ...Hanlder) 
 func (r *route) Head(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Head(path, handlers...)
@@ -57,7 +57,7 @@ func (r *route) Head(path string, controller Controller, middlewares ...Hanlder)
 func (r *route) Post(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Post(path, handlers...)
@@ -67,7 +67,7 @@ func (r *route) Post(path string, controller Controller, middlewares ...Hanlder)
 func (r *route) Put(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Put(path, handlers...)
@@ -77,7 +77,7 @@ func (r *route) Put(path string, controller Controller, middlewares ...Hanlder) 
 func (r *route) Delete(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Delete(path, handlers...)
@@ -87,7 +87,7 @@ func (r *route) Delete(path string, controller Controller, middlewares ...Hanlde
 func (r *route) Patch(path string, controller Controller, middlewares ...Hanlder) *route {
 	handlers := middlewares
 	handlers = append(handlers, func(c *fiber.Ctx) error {
-		return controller(r.support)
+		return controller(r.support, c)
 	})
 
 	r.router.Put(path, handlers...)
