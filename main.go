@@ -13,6 +13,7 @@ import (
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"github.com/refiber/framework/constant"
@@ -107,6 +108,12 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		Extractor:         csrf.CsrfFromCookie(CrsfCookieName),
 		Session:           session,
 		SessionKey:        string(constant.SessionKeyCSRFToken),
+	}))
+
+	// TODO: update logger format similar to laravel
+	app.Use(logger.New(logger.Config{
+		Format:     "${time} ${method} ${latency} ${path}\n",
+		TimeFormat: "2 Jan 2006 15:04:05",
 	}))
 
 	// avoid placing app.Static before any app.Use, as it will cause the app.Use code or middleware to execute twice.
