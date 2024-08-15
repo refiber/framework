@@ -74,7 +74,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 					"type":    support.MessageTypeError,
 					"message": message,
 				})
-				session.Set(string(constant.SessionKeyFlashMessage)+session.ID(), buf)
+				session.Set(string(constant.SessionKeyFlashMessage), buf)
 				session.SetExpiry(time.Minute * 1)
 
 				if err := session.Save(); err != nil {
@@ -98,6 +98,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 	app.Use(csrf.New(csrf.Config{
 		KeyLookup:         "header:" + CrsfCookieName,
 		CookieName:        CrsfCookieName,
+		SingleUseToken:    true,
 		CookieSameSite:    "Lax",
 		CookieSecure:      true,
 		CookieSessionOnly: true,
@@ -105,8 +106,7 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		Expiration:        1 * time.Hour,
 		Extractor:         csrf.CsrfFromCookie(CrsfCookieName),
 		Session:           session,
-		SessionKey:        "fiber.csrf.token",
-		HandlerContextKey: "fiber.csrf.handler",
+		SessionKey:        string(constant.SessionKeyCSRFToken),
 	}))
 
 	// avoid placing app.Static before any app.Use, as it will cause the app.Use code or middleware to execute twice.

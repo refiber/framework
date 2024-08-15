@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
 
 	"github.com/refiber/framework/constant"
 )
@@ -25,12 +26,19 @@ func (a *auth) NewAuthenticatedUserSession(user interface{}) error {
 		return err
 	}
 
-	// before destroy the session, get redirection from the session, then save redirection to the new session
-	var redirection string
-	_redirection := session.Get(string(constant.SessionKeyRedirection) + session.ID())
-	if _redirection != nil {
-		redirection = _redirection.(string)
+	// before destroy the session, get redirection & crsf token from the session, then save it to the new session
+	var redirection *string
+	if v := session.Get(string(constant.SessionKeyRedirection)); v != nil {
+		_v := v.(string)
+		redirection = &_v
 	}
+
+	var crsfToken *csrf.Token
+	if v := session.Get(string(constant.SessionKeyCSRFToken)); v != nil {
+		_v := v.(csrf.Token)
+		crsfToken = &_v
+	}
+
 	session.Destroy()
 
 	// get new session
@@ -39,13 +47,18 @@ func (a *auth) NewAuthenticatedUserSession(user interface{}) error {
 		return err
 	}
 
+	// TODO: make this customizable
 	sessionNew.SetExpiry((time.Hour * 24) * 7)
 
-	if redirection != "" {
-		sessionNew.Set(string(constant.SessionKeyRedirection)+sessionNew.ID(), redirection)
+	if redirection != nil && *redirection != "" {
+		sessionNew.Set(string(constant.SessionKeyRedirection), redirection)
 	}
 
-	sessionKey := string(constant.SessionKeyAuth) + sessionNew.ID()
+	if crsfToken != nil {
+		sessionNew.Set(string(constant.SessionKeyCSRFToken), *crsfToken)
+	}
+
+	sessionKey := string(constant.SessionKeyAuth)
 	buf, _ := json.Marshal(user)
 	sessionNew.Set(sessionKey, buf)
 
@@ -62,7 +75,7 @@ func (a *auth) GetAuthenticatedUserSession(user interface{}) error {
 		return err
 	}
 
-	raw := session.Get(string(constant.SessionKeyAuth) + session.ID())
+	raw := session.Get(string(constant.SessionKeyAuth))
 
 	if data, ok := raw.([]byte); ok {
 		if err := json.Unmarshal(data, &user); err != nil {
@@ -80,7 +93,7 @@ func (a *auth) UpdateAuthenticatedUserSession(user interface{}) error {
 	}
 
 	buf, _ := json.Marshal(user)
-	session.Set(string(constant.SessionKeyAuth)+session.ID(), buf)
+	session.Set(string(constant.SessionKeyAuth), buf)
 
 	if err := session.Save(); err != nil {
 		return err
@@ -95,7 +108,7 @@ func (a *auth) DestroyAuthenticatedUserSession() error {
 		return err
 	}
 
-	session.Reset()
+	session.Destroy()
 
 	return nil
 }
@@ -103,7 +116,7 @@ func (a *auth) DestroyAuthenticatedUserSession() error {
 // get protected url
 func getRedirectLocation(a *auth) (location *string, err error) {
 	if session, err := a.support.sessionStore.Get(a.ctx); err == nil {
-		key := string(constant.SessionKeyRedirection) + session.ID()
+		key := string(constant.SessionKeyRedirection)
 		data := session.Get(key)
 		if redirectLocation, ok := data.(string); ok && redirectLocation != "" {
 			session.Delete(key)
@@ -150,7 +163,7 @@ func (a *auth) RedirectToWithMessage(defaultLocation string, messageType Message
 func (a *auth) LoginPage(location string) error {
 	// save protected url, then redirect back to the protected url after login
 	if session, err := a.support.GetSessionStore().Get(a.ctx); err == nil {
-		session.Set(string(constant.SessionKeyRedirection)+session.ID(), a.ctx.OriginalURL())
+		session.Set(string(constant.SessionKeyRedirection), a.ctx.OriginalURL())
 		if err := session.Save(); err != nil {
 			log.Errorw("refiber.support.auth.LoginPage: failed to save session")
 		}

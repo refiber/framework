@@ -28,7 +28,7 @@ func (s *sharedData) saveTempData(key constant.SessionKey, data *fiber.Map) erro
 	buf, _ := json.Marshal(data)
 
 	session, _ := s.support.sessionStore.Get(s.ctx)
-	session.Set(string(key)+session.ID(), buf)
+	session.Set(string(key), buf)
 	session.SetExpiry(time.Second * 15)
 
 	if err := session.Save(); err != nil {
@@ -49,7 +49,7 @@ func (s *sharedData) Get() (*fiber.Map, error) {
 		return nil, err
 	}
 
-	keyShared := string(constant.SessionKeyShared) + session.ID()
+	keyShared := string(constant.SessionKeyShared)
 	raw := session.Get(keyShared)
 	data, ok := raw.([]byte)
 	if !ok {
@@ -80,7 +80,7 @@ func (s *sharedData) GetTemp() *fiber.Map {
 	/**
 	 * Form Errors
 	 */
-	keyErrors := string(constant.SessionKeyError) + session.ID()
+	keyErrors := string(constant.SessionKeyError)
 	raw := session.Get(keyErrors)
 	if data, ok := raw.([]byte); ok {
 		var d fiber.Map
@@ -95,7 +95,7 @@ func (s *sharedData) GetTemp() *fiber.Map {
 	/**
 	 * Flash Message
 	 */
-	keyFlashMessage := string(constant.SessionKeyFlashMessage) + session.ID()
+	keyFlashMessage := string(constant.SessionKeyFlashMessage)
 	raw = session.Get(keyFlashMessage)
 	if data, ok := raw.([]byte); ok {
 		var d fiber.Map
@@ -110,7 +110,7 @@ func (s *sharedData) GetTemp() *fiber.Map {
 	/**
 	 * Auth
 	 */
-	keyAuth := string(constant.SessionKeyAuth) + session.ID()
+	keyAuth := string(constant.SessionKeyAuth)
 	raw = session.Get(keyAuth)
 	if data, ok := raw.([]byte); ok {
 		var d fiber.Map
@@ -124,7 +124,7 @@ func (s *sharedData) GetTemp() *fiber.Map {
 	/**
 	 * Shared
 	 */
-	keyShared := string(constant.SessionKeyShared) + session.ID()
+	keyShared := string(constant.SessionKeyShared)
 	raw = session.Get(keyShared)
 	if data, ok := raw.([]byte); ok {
 		var d fiber.Map

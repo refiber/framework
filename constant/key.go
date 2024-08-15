@@ -3,11 +3,12 @@ package constant
 type SessionKey string
 
 const (
-	SessionKeyError        SessionKey = "form:errors:"
-	SessionKeyAuth         SessionKey = "auth:"
-	SessionKeyRedirection  SessionKey = "redirection:"
-	SessionKeyFlashMessage SessionKey = "flash_message:"
-	SessionKeyShared       SessionKey = "shared:"
+	SessionKeyError        SessionKey = "form:errors"
+	SessionKeyAuth         SessionKey = "auth"
+	SessionKeyRedirection  SessionKey = "redirection"
+	SessionKeyFlashMessage SessionKey = "flash_message"
+	SessionKeyShared       SessionKey = "shared"
+	SessionKeyCSRFToken    SessionKey = "csrf_token"
 )
 
 func (k SessionKey) IsValid() bool {
