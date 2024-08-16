@@ -11,6 +11,6 @@ func ({{.PackageName}} *{{.PackageName}}Controller) {{.MethodName}}() *{{.ModelN
 
 type {{.ModelName}} struct{ {{.PackageName}}Controller }
 
-func ({{.ReciverName}} *{{.ModelName}}) Index(s support.Refiber, c *fiber.ctx) error {
+func ({{.ReciverName}} *{{.ModelName}}) Index(s support.Refiber, c *fiber.Ctx) error {
 	return c.SendString("TODO")
 }
