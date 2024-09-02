@@ -128,7 +128,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 
 	if renderViewTemplate {
 		jsonProps, _ := json.Marshal(data)
-		viewData, viewDataStruct := createViewData(&jsonProps, r.viewData)
+		viewData := createViewData(&jsonProps, r.viewData)
 
 		err := r.ctx.Render(r.viewTemplate, viewData)
 
@@ -138,11 +138,12 @@ func (r *render) Page(page string, props *fiber.Map) error {
 
 		// pre-render and ssr only available on production
 		viteDevURL := vite.GetDevelopmentURL()
-		if viteDevURL == nil {
+		if viteDevURL == nil && viewData != nil {
+			propsDivTag := (*viewData)["props"].(string)
 			if manifest := vite.GetManifest(); manifest != nil {
 				if r.SSRHanlder != nil && r.ssr {
 					html := r.ctx.Response().Body()
-					ssr, err := newSSR(html, jsonProps, viewDataStruct)
+					ssr, err := newSSR(html, jsonProps, &propsDivTag)
 					if err != nil {
 						log.Error(err)
 					} else {
@@ -163,7 +164,7 @@ func (r *render) Page(page string, props *fiber.Map) error {
 						if scriptBuf, err := os.ReadFile(fmt.Sprintf(`./public/build/%s`, *filePath)); err == nil {
 							html := string(r.ctx.Response().Body())
 
-							preRender := newPreRender(&html, filePath, scriptBuf, viewDataStruct, jsonProps)
+							preRender := newPreRender(&html, filePath, scriptBuf, &propsDivTag, jsonProps)
 							preRender.rendered = r.PreRenderHanlder(preRender)
 
 							if preRender.rendered != nil {

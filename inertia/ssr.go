@@ -19,7 +19,7 @@ var (
 	ssrFilePath         = "./public/build/ssr/ssr.js"
 )
 
-func newSSR(html, props []byte, vds *viewDataStruct) (*ssr, error) {
+func newSSR(html, props []byte, propsDivTag *string) (*ssr, error) {
 	scriptBuf, err := os.ReadFile(ssrFilePath)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func newSSR(html, props []byte, vds *viewDataStruct) (*ssr, error) {
 
 	bundledScript := append(scripts["main.js"], scripts["run.js"]...)
 
-	ssr := ssr{html: html, vds: vds, bundledScript: bundledScript, scripts: scripts}
+	ssr := ssr{html: html, propsDivTag: propsDivTag, bundledScript: bundledScript, scripts: scripts}
 	return &ssr, nil
 }
 
@@ -39,7 +39,7 @@ type ssr struct {
 	html          []byte
 	bundledScript []byte
 	results       *string
-	vds           *viewDataStruct
+	propsDivTag   *string
 	scripts       map[string][]byte
 }
 
@@ -70,11 +70,6 @@ func (s *ssr) createClientHTML() ([]byte, error) {
 		return nil, fmt.Errorf("Failed when convert body interface to string")
 	}
 
-	newBody := fmt.Sprintf(`
-    %s
-    %s
-  `, s.vds.ScriptTags, strBody)
-
-	results := strings.Replace(string(s.html), s.vds.AllTags, newBody, 1)
+	results := strings.Replace(string(s.html), *s.propsDivTag, strBody, 1)
 	return []byte(results), nil
 }

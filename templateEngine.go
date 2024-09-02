@@ -19,7 +19,7 @@ func newTemplateEngine() *html.Engine {
 	)
 
 	engine.AddFunc("vite", func(s ...string) template.HTML {
-		return template.HTML(vite.GetScripts(s...))
+		return template.HTML(vite.GetCompleteScripts(s...))
 	})
 
 	engine.AddFunc("inertia", func(s string) template.HTML {

@@ -1,12 +1,16 @@
 package vite
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
 )
 
-var BuildPath = "./public/build"
+var (
+	BuildPath       = "./public/build"
+	PackageJsonPath = "package.json"
+)
 
 // TODO: find a way to call this only once every request
 func GetDevelopmentURL() *string {
@@ -21,6 +25,28 @@ func GetDevelopmentURL() *string {
 	}
 
 	return nil
+}
+
+func GetCompleteScripts(resources ...string) string {
+	scripts := GetScripts(resources...)
+
+	developmentURL := GetDevelopmentURL()
+	if developmentURL != nil {
+		if buf, err := os.ReadFile(PackageJsonPath); err == nil && bytes.Contains(buf, []byte("@vitejs/plugin-react")) {
+			scripts = fmt.Sprintf(`
+        <script type="module">
+          import RefreshRuntime from "%s/@react-refresh"
+          RefreshRuntime.injectIntoGlobalHook(window)
+          window.$RefreshReg$ = () => {}
+          window.$RefreshSig$ = () => (type) => type
+          window.__vite_plugin_react_preamble_installed__ = true
+        </script>
+        %s
+      `, *developmentURL, scripts)
+		}
+	}
+
+	return scripts
 }
 
 func GetScripts(resources ...string) string {
