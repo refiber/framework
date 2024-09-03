@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"crypto/md5"
@@ -9,7 +9,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func MergeFiberMaps(init, override *fiber.Map) fiber.Map {
+func MergeFiberMaps(maps ...fiber.Map) *fiber.Map {
+	merged := fiber.Map{}
+
+	for _, m := range maps {
+		for key, value := range m {
+			if existingValue, exists := merged[key]; exists {
+				if existingMap, ok := existingValue.(fiber.Map); ok {
+					if valueMap, ok := value.(fiber.Map); ok {
+						merged[key] = MergeFiberMaps(existingMap, valueMap)
+						continue
+					}
+				}
+			}
+			merged[key] = value
+		}
+	}
+
+	return &merged
+}
+
+func OverrideFiberMaps(init, override *fiber.Map) fiber.Map {
 	allData := make(fiber.Map)
 
 	if init != nil {

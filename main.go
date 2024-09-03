@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
@@ -17,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 
 	"github.com/refiber/framework/constant"
+	"github.com/refiber/framework/internal/validator"
 	"github.com/refiber/framework/router"
 	"github.com/refiber/framework/support"
 )
@@ -123,12 +123,11 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 	/**
 	 * Validator config
 	 */
+	validate := validator.New()
+
+	// TODO: make it support multi lang: https://github.com/go-playground/validator/tree/master/translations
 	en := en.New()
 	uni := ut.New(en, en)
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-
-	// TODO: make it customizable
 	translator, _ := uni.GetTranslator("en")
 	en_translations.RegisterDefaultTranslations(validate, translator)
 

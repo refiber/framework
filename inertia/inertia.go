@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/refiber/framework/support"
-	"github.com/refiber/framework/utils"
+	"github.com/refiber/framework/util"
 	"github.com/refiber/framework/vite"
 )
 
@@ -115,10 +115,10 @@ func (r *render) Page(page string, props *fiber.Map) error {
 
 	data := fiber.Map{}
 	data["url"] = r.ctx.OriginalURL()
-	v := utils.GetMD5Hash("./public/build/manifest.json")
+	v := util.GetMD5Hash("./public/build/manifest.json")
 	data["version"] = v
 	data["component"] = page
-	data["props"] = utils.MergeFiberMaps(&sharedProps, props)
+	data["props"] = util.OverrideFiberMaps(&sharedProps, props)
 
 	headers := r.ctx.GetReqHeaders()
 
