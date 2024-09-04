@@ -69,16 +69,24 @@ func (i *inertia) Render(ctx *fiber.Ctx) *render {
 	return r
 }
 
+// set global view template, default: app
 func (i *inertia) SetViewTemplate(view string) {
 	i.viewTemplate = view
 }
 
 type render struct {
 	*inertia
-	viewData  *fiber.Map
-	preRender bool
-	ssr       bool
-	ctx       *fiber.Ctx
+	viewTemplate string
+	viewData     *fiber.Map
+	preRender    bool
+	ssr          bool
+	ctx          *fiber.Ctx
+}
+
+// set view template for specific render
+func (r *render) SetViewTemplate(view string) *render {
+	r.viewTemplate = view
+	return r
 }
 
 func (r *render) SetViewData(data *fiber.Map) *render {
