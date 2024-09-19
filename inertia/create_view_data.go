@@ -2,6 +2,7 @@ package inertia
 
 import (
 	"fmt"
+	"html"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,7 +15,7 @@ func createViewData(bufJsonProps *[]byte, viewData *fiber.Map) *fiber.Map {
 		data = *viewData
 	}
 
-	data["props"] = fmt.Sprintf(`<div id="app" data-page=%s></div>`, string(*bufJsonProps))
+	data["props"] = fmt.Sprintf(`<div id="app" data-page="%s"></div>`, html.EscapeString(string(*bufJsonProps)))
 
 	return &data
 }
