@@ -108,6 +108,16 @@ func New(c Config) (*fiber.App, router.RouterInterface, support.Refiber) {
 		Extractor:         csrf.CsrfFromCookie(CrsfCookieName),
 		Session:           session,
 		SessionKey:        string(constant.SessionKeyCSRFToken),
+		Next: func(c *fiber.Ctx) bool {
+			// TODO: make it customizable
+
+			path := c.Path()
+			if strings.HasPrefix(path, "/api/") {
+				return true
+			}
+
+			return false
+		},
 	}))
 
 	// TODO: update logger format similar to laravel
