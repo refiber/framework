@@ -1,10 +1,12 @@
 package support
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/refiber/framework/constant"
 	"github.com/refiber/framework/util"
@@ -50,6 +52,31 @@ func (v *validation) Validate(sct interface{}) error {
 	}
 
 	return err
+}
+
+func (v *validation) GetErrorResult() (*fiber.Map, error) {
+	keyErrors := string(constant.SessionKeyError)
+	session, err := v.support.sessionStore.Get(v.ctx)
+	if err != nil {
+		log.Errorf("refiber.support.session.GetTempData:", err)
+		return nil, err
+	}
+
+	raw := session.Get(keyErrors)
+	if data, ok := raw.([]byte); ok {
+		var d fiber.Map
+		if err := json.Unmarshal(data, &d); err != nil {
+			session.Delete(keyErrors)
+			log.Errorw("refiber.support.validation.GetErrorResult: failed to get errors")
+			return nil, err
+		} else {
+			// should be deleted?
+			session.Delete(keyErrors)
+			return &d, nil
+		}
+	}
+
+	return nil, nil
 }
 
 type ValidationErrorField struct {
